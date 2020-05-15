@@ -13,7 +13,7 @@ def prior_probability(class0, class1):
 def replace_zeroes(arr, n):
     # Replace 0 with 0.0001 in array
     for i in range(len(arr)):
-        if(arr[i] == 0):
+        if(arr[i] <= 0):
             arr[i] = n
     return arr
 
@@ -33,8 +33,8 @@ def mean_std(class0, class1):
         mean1.append(np.mean(class1[:,i]))  
         stdDev1.append(np.std(class1[:,i]))  
 
-    stdDev0 = replace_zeroes(stdDev0, 0.0001)
-    stdDev1 = replace_zeroes(stdDev1, 1000000000)
+    stdDev0 = replace_zeroes(stdDev0, 0.01)
+    stdDev1 = replace_zeroes(stdDev1, 0.01)
 
     return mean0, stdDev0, mean1, stdDev1
 
@@ -50,9 +50,9 @@ def naive_bayes(prior0, prior1, mean0, stdDev0, mean1, stdDev1, testClass0, test
         for j in range(len(mean0)):
 
             normal0 = N(testClass0[i][j], mean0[j], stdDev0[j])
-            normal0 = normal0 if normal0 > 0.0 else 0.001
+            normal0 = normal0 if normal0 > 0.0 else 0.000000000000001
             normal1 = N(testClass0[i][j], mean1[j], stdDev1[j])
-            normal1 = normal1 if normal1 > 0.0 else 0.001
+            normal1 = normal1 if normal1 > 0.0 else 0.000000000000001
 
             p0.append(math.log(normal0))
             p1.append(math.log(normal1))
@@ -66,9 +66,9 @@ def naive_bayes(prior0, prior1, mean0, stdDev0, mean1, stdDev1, testClass0, test
         for j in range(len(mean0)):
 
             normal0 = N(testClass1[i][j], mean0[j], stdDev0[j])
-            normal0 = normal0 if normal0 > 0.0 else 0.0001
+            normal0 = normal0 if normal0 > 0.0 else 0.0000000000000000001
             normal1 = N(testClass1[i][j], mean1[j], stdDev1[j])
-            normal1 = normal1 if normal1 > 0.0 else 0.0001
+            normal1 = normal1 if normal1 > 0.0 else 0.0000000000000000001
 
             p0.append(math.log(normal0))
             p1.append(math.log(normal1))
