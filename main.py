@@ -10,11 +10,11 @@ def prior_probability(class0, class1):
     prior1 = class1.shape[0] / total
     return prior0, prior1
 
-def replace_zeroes(arr):
+def replace_zeroes(arr, n):
     # Replace 0 with 0.0001 in array
     for i in range(len(arr)):
         if(arr[i] == 0):
-            arr[i] = 0.0001
+            arr[i] = n
     return arr
 
 def mean_std(class0, class1):
@@ -33,8 +33,8 @@ def mean_std(class0, class1):
         mean1.append(np.mean(class1[:,i]))  
         stdDev1.append(np.std(class1[:,i]))  
 
-    stdDev0 = replace_zeroes(stdDev0)
-    stdDev1 = replace_zeroes(stdDev1)
+    stdDev0 = replace_zeroes(stdDev0, 0.0001)
+    stdDev1 = replace_zeroes(stdDev1, 1000000000)
 
     return mean0, stdDev0, mean1, stdDev1
 
@@ -45,12 +45,14 @@ def naive_bayes(prior0, prior1, mean0, stdDev0, mean1, stdDev1, testClass0, test
     finalPredictions1 = []
     prediction = [0,0]
     for i in range(len(testClass0)):
+        p0 = []
+        p1 = []
         for j in range(len(mean0)):
 
             normal0 = N(testClass0[i][j], mean0[j], stdDev0[j])
-            normal0 = normal0 if normal0 > 0.0 else 0.0001
+            normal0 = normal0 if normal0 > 0.0 else 0.001
             normal1 = N(testClass0[i][j], mean1[j], stdDev1[j])
-            normal1 = normal1 if normal1 > 0.0 else 0.0001
+            normal1 = normal1 if normal1 > 0.0 else 0.001
 
             p0.append(math.log(normal0))
             p1.append(math.log(normal1))
@@ -59,6 +61,8 @@ def naive_bayes(prior0, prior1, mean0, stdDev0, mean1, stdDev1, testClass0, test
         finalPredictions0.append(np.argmax(prediction))
 
     for i in range(len(testClass1)):
+        p0 = []
+        p1 = []
         for j in range(len(mean0)):
 
             normal0 = N(testClass1[i][j], mean0[j], stdDev0[j])
@@ -73,8 +77,11 @@ def naive_bayes(prior0, prior1, mean0, stdDev0, mean1, stdDev1, testClass0, test
         finalPredictions1.append(np.argmax(prediction))
 
     nInstances = testClass0.shape[0] + testClass1.shape[0]
-    accuracy0 = finalPredictions0.count(0) / len(finalPredictions0)
-    accuracy1 = finalPredictions1.count(1) / len(finalPredictions1)
+    trues0 = finalPredictions0.count(0)
+    trues1 = finalPredictions1.count(1)
+    accuracy0 = trues0 / len(finalPredictions0)
+    accuracy1 = trues1 / len(finalPredictions1)
+    overallAccuracy = (trues0 + trues1) / nInstances
     
     return  
 
@@ -95,13 +102,10 @@ trainingClass1 = class1[:920, :-1]
 testClass0 = class0[1380:, :-1]
 testClass1 = class1[920:, :-1]
 
-trainingSet = np.concatenate((trainingClass0, trainingClass1))
-testSet = np.concatenate((testClass0, testClass1))
+# trainingSet = np.concatenate((trainingClass0, trainingClass1))
+# testSet = np.concatenate((testClass0, testClass1))
 
-trainingClass1 = np.array(([3.0, 5.1], [4.1, 6.3], [7.2, 9.8]))
-trainingClass0 = np.array(([2.0, 1.1], [4.1, 2.0], [8.1, 9.4]))
-testClass0 = np.array(([5.2,6.3],[5.2,6.3]))
-testClass1 = np.array(([5.2,6.3],[5.2,6.3]))
+
 
 # Prior probability for each class in the training
 prior0, prior1 = prior_probability(trainingClass0, trainingClass1)
