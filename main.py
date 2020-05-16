@@ -1,7 +1,11 @@
 # Import libraries
 import numpy as np
 import pandas as pd
+import seaborn as sn
 import math
+from sklearn import metrics 
+import matplotlib.pyplot as plt
+
 
 def prior_probability(class0, class1):
     # Compute prior probability for each class
@@ -33,61 +37,72 @@ def mean_std(class0, class1):
         mean1.append(np.mean(class1[:,i]))  
         stdDev1.append(np.std(class1[:,i]))  
 
-    stdDev0 = replace_zeroes(stdDev0, 0.01)
-    stdDev1 = replace_zeroes(stdDev1, 0.01)
+    stdDev0 = replace_zeroes(stdDev0, 0.001)
+    stdDev1 = replace_zeroes(stdDev1, 0.001)
 
     return mean0, stdDev0, mean1, stdDev1
 
 def naive_bayes(prior0, prior1, mean0, stdDev0, mean1, stdDev1, testClass0, testClass1):
+    # Predict classes for test cases given and calculate the accuracy, 
+    # precision and recall
+
     p0 = []
     p1 = []
     finalPredictions0 = []
     finalPredictions1 = []
     prediction = [0,0]
+
+    # Run Naive Bayes on the 0 test cases
     for i in range(len(testClass0)):
         p0 = []
         p1 = []
         for j in range(len(mean0)):
 
             normal0 = N(testClass0[i][j], mean0[j], stdDev0[j])
-            normal0 = normal0 if normal0 > 0.0 else 0.000000000000001
             normal1 = N(testClass0[i][j], mean1[j], stdDev1[j])
-            normal1 = normal1 if normal1 > 0.0 else 0.000000000000001
 
-            p0.append(math.log(normal0))
-            p1.append(math.log(normal1))
-        prediction[0] = sum(p0) + math.log(prior0)
-        prediction[1] = sum(p1) + math.log(prior1)
+            p0.append(normal0)
+            p1.append(normal1)
+        prediction[0] = np.prod(p0) * (prior0)
+        prediction[1] = np.prod(p1) * (prior1)
         finalPredictions0.append(np.argmax(prediction))
 
+    # Run Naive Bayes on the 1 test cases
     for i in range(len(testClass1)):
         p0 = []
         p1 = []
         for j in range(len(mean0)):
 
             normal0 = N(testClass1[i][j], mean0[j], stdDev0[j])
-            normal0 = normal0 if normal0 > 0.0 else 0.0000000000000000001
             normal1 = N(testClass1[i][j], mean1[j], stdDev1[j])
-            normal1 = normal1 if normal1 > 0.0 else 0.0000000000000000001
 
-            p0.append(math.log(normal0))
-            p1.append(math.log(normal1))
-        prediction[0] = sum(p0) + math.log(prior0)
-        prediction[1] = sum(p1) + math.log(prior1)
+            p0.append(normal0)
+            p1.append(normal1)
+        prediction[0] = np.prod(p0) * (prior0)
+        prediction[1] = np.prod(p1) * (prior1)
         finalPredictions1.append(np.argmax(prediction))
 
-    nInstances = testClass0.shape[0] + testClass1.shape[0]
-    trues0 = finalPredictions0.count(0)
-    trues1 = finalPredictions1.count(1)
-    accuracy0 = trues0 / len(finalPredictions0)
-    accuracy1 = trues1 / len(finalPredictions1)
-    overallAccuracy = (trues0 + trues1) / nInstances
+    labels = np.concatenate((np.zeros(len(finalPredictions0)), np.ones(len(finalPredictions1))))
+    finalPredictions = np.concatenate((finalPredictions0,finalPredictions1))
     
-    return  
+    return labels, finalPredictions
 
 def N(x, mean, stdDev):
+    # Calculate the normal dis. for a given input x
 	exponent = math.exp(-((x-mean)**2 / (2 * stdDev**2 )))
 	return (1 / (math.sqrt(2 * math.pi) * stdDev)) * exponent
+
+def confusion_matrix(labels, finalPredictions):
+    # Create confusion matrix
+    confusionMatrix = metrics.confusion_matrix(labels ,finalPredictions)
+    print(confusionMatrix)
+    df_cm = pd.DataFrame(confusionMatrix, index = [i for i in "01"],
+                    columns = [i for i in "01"])
+    plt.figure(figsize = (10,7))
+    sn.heatmap(df_cm, annot=True, fmt='g')
+
+    # Plot accuracy graph and confusion matrix
+    plt.show()
 
 # Import dataset and seperate into two classes
 datasetTrain = pd.read_csv('dataset/spambase.data')
@@ -102,10 +117,6 @@ trainingClass1 = class1[:920, :-1]
 testClass0 = class0[1380:, :-1]
 testClass1 = class1[920:, :-1]
 
-# trainingSet = np.concatenate((trainingClass0, trainingClass1))
-# testSet = np.concatenate((testClass0, testClass1))
-
-
 
 # Prior probability for each class in the training
 prior0, prior1 = prior_probability(trainingClass0, trainingClass1)
@@ -114,5 +125,10 @@ prior0, prior1 = prior_probability(trainingClass0, trainingClass1)
 mean0, stdDev0, mean1, stdDev1 = mean_std(trainingClass0, trainingClass1)
 
 # Run Naive Bayes on testset
-naive_bayes(prior0, prior1, mean0, stdDev0, mean1, stdDev1, testClass0, testClass1)
-print("")
+labels, finalPredictions = naive_bayes(prior0, prior1, mean0, stdDev0, mean1, stdDev1, testClass0, testClass1)
+
+# Run analysis
+print("Gaussian Naive Bayes model accuracy:", metrics.accuracy_score(labels, finalPredictions))
+print("Gaussian Naive Bayes model precision:", metrics.precision_score(labels, finalPredictions))
+print("Gaussian Naive Bayes model recall:", metrics.recall_score(labels, finalPredictions))
+confusion_matrix(labels, finalPredictions)
